@@ -2,194 +2,244 @@ from manim import *
 import numpy as np
 import os
 
-
 class LHCCollision(Scene):
     def construct(self):
-        # 0. Background Audio check
-        audio_path = "assets/ambient.mp3"
-        if os.path.exists(audio_path):
-            pass # We handle audio in post-processing now!
+        # 0. SETUP
+        # Disable Manim's default wait time for shorter development loops if needed, 
+        # but we want ~60s total.
 
-        # === PART 1: THE ACCELERATOR (TOPOLOGY) ===
-        
-        # Geometry setup
-        lhc_radius = 2.2
-        sps_radius = 0.6
-        
-        # LHC Ring (Main)
-        lhc_ring = Circle(radius=lhc_radius, color=BLUE_E, stroke_width=4).shift(RIGHT * 1.5)
-        
-        # SPS Ring (Injector) - Tangent to LHC at LEFT side
-        # LHC Left point is: center + radius * LEFT = (1.5, 0) + (-2.2, 0) = (-0.7, 0)
-        # SPS Right point must be (-0.7, 0)
-        # SPS Center = SPS Right + radius * LEFT = (-0.7, 0) + (-0.6, 0) = (-1.3, 0)
-        lhc_left_point = lhc_ring.point_at_angle(PI)
-        sps_center = lhc_left_point + LEFT * sps_radius
-        sps_ring = Circle(radius=sps_radius, color=GRAY, stroke_width=4).move_to(sps_center)
-        
-        # Labels
-        sps_label = Text("SPS", font_size=20, color=GRAY).next_to(sps_ring, UP)
-        lhc_label = Text("Large Hadron Collider\n(27 km circumference)", font_size=24, color=BLUE)
-        lhc_label.next_to(lhc_ring, UP)
+        # === THEME: DARK PHYSICS ===
+        self.camera.background_color = "#111111"
 
-        title = Text("The Particle Hunt", font_size=36).to_edge(UP)
-        self.play(Write(title))
-        self.play(Create(sps_ring), Write(sps_label))
-        self.play(Create(lhc_ring), Write(lhc_label))
-        self.wait(0.5)
-
-        # Physics Formula
-        formula_lorentz = MathTex(r"\vec{F} = q(\vec{v} \times \vec{B})", font_size=32, color=YELLOW)
-        formula_lorentz.to_corner(UL).shift(DOWN * 0.5)
-        expl_lorentz = Text("Magnetic fields bend the path", font_size=20, color=YELLOW).next_to(formula_lorentz, DOWN)
+        # ==========================================
+        # PART 1: THE THEORY (THE HIGGS FIELD) (~15s)
+        # ==========================================
         
-        self.play(Write(formula_lorentz), FadeIn(expl_lorentz))
-
-        # === PART 2: INJECTION & ACCELERATION ===
+        # Grid representing the field
+        # Create a grid of small dots
+        rows = 15
+        cols = 25
+        grid = VGroup()
+        for x in range(-7, 8):
+            for y in range(-4, 5):
+                grid.add(Dot(point=[x, y, 0], radius=0.03, color=GRAY_D))
         
-        # Visualizing a "bunch" of protons
-        proton = Dot(point=sps_ring.point_at_angle(0), color=YELLOW, radius=0.1)
+        field_title = Text("The Higgs Field", font_size=40, color=BLUE_B).to_edge(UP)
+        field_desc = Text("Particles gain mass by interacting with the field", font_size=24, color=GRAY).next_to(field_title, DOWN)
         
-        # 1. Spin in SPS
-        self.play(MoveAlongPath(proton, sps_ring, run_time=1.5, rate_func=linear))
-        self.play(MoveAlongPath(proton, sps_ring, run_time=1.0, rate_func=linear))
-        
-        # 2. Inject into LHC (Split into two beams)
-        beam_cw = Dot(point=lhc_left_point, color=BLUE_A, radius=0.08) # Clockwise
-        beam_ccw = Dot(point=lhc_left_point, color=RED_A, radius=0.08) # Counter-Clockwise
-        
-        self.play(
-            ReplacementTransform(proton, beam_cw),
-            FadeIn(beam_ccw),
-            FadeOut(sps_label), FadeOut(sps_ring)
-        )
-        
-        # Energy Formula
-        formula_energy = MathTex(r"E_{beam} = 6.5\text{ TeV}", font_size=32, color=RED).to_corner(UR).shift(DOWN * 0.5)
-        self.play(Write(formula_energy))
-
-        # 3. Accelerate in opposite directions
-        # We need a reversed path for CCW
-        # Manim's MoveAlongPath follows strict point ordering. 
-        # Trick: Rotate the mobject along the center? Or create a reversed path copy.
-        lhc_path_cw = lhc_ring.copy().set_opacity(0)
-        lhc_path_ccw = lhc_ring.copy().set_opacity(0).reverse_direction() # Does reverse_points work?
-        # Actually standard Circle starts at 0 (Right). We are at PI (Left).
-        # To make it smooth, let's rotate path so start point matches current pos
-        lhc_path_cw.rotate(PI) 
-        lhc_path_ccw.rotate(PI) 
-        # Note: Circle points start at 0 radians (Right). We want to start at PI (Left).
-        
-        # Speed up animation
-        for speed in [2, 1, 0.5, 0.25]:
-            self.play(
-                MoveAlongPath(beam_cw, lhc_path_cw, run_time=speed, rate_func=linear),
-                MoveAlongPath(beam_ccw, lhc_path_ccw, run_time=speed, rate_func=linear),
-            )
-            
-        # === PART 3: THE COLLISION ===
-        
-        # Move title out
-        self.play(FadeOut(title), FadeOut(lhc_label), FadeOut(lhc_ring), 
-                  FadeOut(formula_lorentz), FadeOut(expl_lorentz), FadeOut(formula_energy))
-        
-        # Zoom effect setup: Bring beams to center collision point
-        # Let's say collision happens at center of screen
-        collision_point = ORIGIN
-        
-        self.play(
-            beam_cw.animate.move_to(LEFT * 4).scale(2),
-            beam_ccw.animate.move_to(RIGHT * 4).scale(2),
-        )
-        
-        # SLOW MOTION SMASH
-        self.play(
-            beam_cw.animate.move_to(ORIGIN),
-            beam_ccw.animate.move_to(ORIGIN),
-            run_time=0.5, rate_func=rush_into
-        )
-        
-        # EXPLOSION
-        flash = Flash(ORIGIN, color=WHITE, flash_radius=0.5, num_lines=20)
-        
-        # Particle Tracks (random paths out)
-        np.random.seed(1)
-        tracks = VGroup()
-        for _ in range(15):
-            angle = np.random.uniform(0, TAU)
-            length = np.random.uniform(2, 4)
-            end = np.array([np.cos(angle)*length, np.sin(angle)*length, 0])
-            track = Line(ORIGIN, end, color=random_color())
-            tracks.add(track)
-            
-        # The Higgs Decay (2 Photons)
-        # H -> gamma gamma (dashed straight lines, back to back)
-        h_angle = PI / 3 # arbitrary angle
-        gamma1_end = np.array([np.cos(h_angle)*3, np.sin(h_angle)*3, 0])
-        gamma2_end = np.array([np.cos(h_angle+PI)*3, np.sin(h_angle+PI)*3, 0])
-        
-        gamma1 = DashedLine(ORIGIN, gamma1_end, color=YELLOW, dashed_ratio=0.5)
-        gamma2 = DashedLine(ORIGIN, gamma2_end, color=YELLOW, dashed_ratio=0.5)
-        
-        # Higgs Label
-        label_h = MathTex(r"H \to \gamma\gamma", color=YELLOW, font_size=36).next_to(gamma1, UP, buff=0.1)
-        
-        # Animate Explosion
-        self.play(
-            FadeOut(beam_cw), FadeOut(beam_ccw),
-            flash,
-            Create(tracks, run_time=0.5),
-        )
-        self.play(
-            Create(gamma1), Create(gamma2), Write(label_h),
-            tracks.animate.set_opacity(0.3) # Fade background tracks
-        )
+        self.play(FadeIn(grid), Write(field_title))
+        self.play(Write(field_desc))
         self.wait(1)
         
-        # === PART 4: THE DATA (THE BUMP) ===
+        # Particle 1: Photon (Massless) - Zips through
+        photon = Dot(color=YELLOW, radius=0.1)
+        photon.move_to(LEFT * 8 + UP * 2)
+        photon_trail = TracedPath(photon.get_center, dissipating_time=0.5, stroke_opacity=[1, 0], stroke_width=3, stroke_color=YELLOW)
+        self.add(photon_trail)
         
-        # Transition to plot
-        plot_group = VGroup()
-        
-        # Axes
-        ax = Axes(
-            x_range=[100, 160, 10],
-            y_range=[0, 1000, 200],
-            x_length=9, y_length=6,
-            axis_config={"include_tip": False}
-        )
-        x_lbl = ax.get_x_axis_label(Text("Mass (GeV)", font_size=20))
-        y_lbl = ax.get_y_axis_label(Text("Events", font_size=20).rotate(90 * DEGREES))
-        
-        # Background Noise (Exponential decay)
-        def bg_func(x):
-            return 800 * np.exp(-0.02 * (x - 100))
-            
-        bg_curve = ax.plot(bg_func, x_range=[100, 160], color=GRAY)
-        
-        # Signal (Gaussian Bump at 125)
-        def signal_func(x):
-            return bg_func(x) + 150 * np.exp(-0.1 * (x - 125)**2)
-            
-        signal_curve = ax.plot(signal_func, x_range=[100, 160], color=YELLOW)
-        
-        plot_group.add(ax, x_lbl, y_lbl, bg_curve, signal_curve)
+        photon_label = Text("Photon (Massless)", font_size=20, color=YELLOW).next_to(photon, UP)
         
         self.play(
-            FadeOut(tracks), FadeOut(gamma1), FadeOut(gamma2), FadeOut(label_h),
-            FadeIn(plot_group)
+            MoveAlongPath(photon, Line(LEFT*8+UP*2, RIGHT*8+UP*2), run_time=1.5, rate_func=linear),
+            Write(photon_label, run_time=1)
+        )
+        self.remove(photon, photon_trail, photon_label)
+        
+        # Particle 2: Heavy Quark (Massive) - Drags through
+        # We simulate interaction by making nearby grid points light up/move towards it
+        quark = Dot(color=RED, radius=0.15)
+        quark.move_to(LEFT * 8 + DOWN * 1)
+        quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).next_to(quark, DOWN)
+        tracer = TracedPath(quark.get_center, dissipating_time=2.0, stroke_opacity=[1, 0], stroke_width=5, stroke_color=RED) 
+        self.add(tracer)
+
+        # Move slower
+        self.play(
+            MoveAlongPath(quark, Line(LEFT*8+DOWN*1, RIGHT*8+DOWN*1), run_time=5, rate_func=linear),
+            FadeIn(quark_label),
         )
         
-        # Animate "Data Collection" (Curve fills up)
-        self.play(Create(signal_curve, run_time=2))
-        
-        # Highlight Bump
-        bump_arrow = Arrow(ax.c2p(125, signal_func(125) + 200), ax.c2p(125, signal_func(125)), color=RED)
-        bump_text = Text("Discovery!\n125 GeV", color=RED, font_size=24).next_to(bump_arrow, UP)
-        
-        self.play(GrowArrow(bump_arrow), Write(bump_text))
+        # Formula
+        lagrangian = MathTex(r"\mathcal{L} \supset -g H \bar{\psi} \psi", font_size=36, color=BLUE).to_edge(DOWN)
+        self.play(Write(lagrangian))
         self.wait(2)
         
-        final_text = Text("The Standard Model is Complete?", font_size=32).to_edge(UP)
-        self.play(Write(final_text))
+        # Transition
+        self.play(
+            FadeOut(grid), FadeOut(field_title), FadeOut(field_desc), 
+            FadeOut(quark), FadeOut(quark_label), FadeOut(lagrangian), FadeOut(tracer)
+        )
+
+        # ==========================================
+        # PART 2: THE MACHINE (ACCELERATOR) (~25s)
+        # ==========================================
+        
+        # Geometry
+        lhc_radius = 2.5
+        sps_radius = 0.7
+        
+        lhc_ring = Circle(radius=lhc_radius, color=BLUE_E, stroke_width=4).shift(RIGHT * 1.5)
+        lhc_left = lhc_ring.point_at_angle(PI)
+        
+        sps_ring = Circle(radius=sps_radius, color=GRAY, stroke_width=4)
+        sps_ring.move_to(lhc_left + LEFT * sps_radius)
+        
+        # Detailed Labels
+        sps_label = Text("SPS (7 km)", font_size=16, color=GRAY).next_to(sps_ring, UP)
+        lhc_bold = Text("Large Hadron Collider", font_size=28, color=BLUE_B).to_corner(UL)
+        lhc_sub = Text("27 km Circumference", font_size=20, color=BLUE_D).next_to(lhc_bold, DOWN)
+        
+        self.play(
+            Create(sps_ring), Write(sps_label),
+            Create(lhc_ring), Write(lhc_bold), Write(lhc_sub)
+        )
+        
+        # PROTON BUNCH INJECTION
+        # Start slow to avoid aliasing visuals
+        proton = Dot(point=sps_ring.point_at_angle(0), color=YELLOW, radius=0.08)
+        
+        # Proper trail for smooth motion look
+        trail = TracedPath(proton.get_center, dissipating_time=0.4, stroke_opacity=[1, 0], stroke_width=4, stroke_color=YELLOW)
+        self.add(trail)
+        
+        # SPS Phase
+        self.play(MoveAlongPath(proton, sps_ring, run_time=2, rate_func=linear))
+        self.play(MoveAlongPath(proton, sps_ring, run_time=1, rate_func=linear))
+        
+        # Transfer to LHC
+        # Split into two beams
+        beam1 = Dot(point=lhc_left, color=BLUE_A, radius=0.08)
+        beam2 = Dot(point=lhc_left, color=RED_A, radius=0.08)
+        
+        trail1 = TracedPath(beam1.get_center, dissipating_time=0.5, stroke_opacity=[1, 0], stroke_width=4, stroke_color=BLUE_A)
+        trail2 = TracedPath(beam2.get_center, dissipating_time=0.5, stroke_opacity=[1, 0], stroke_width=4, stroke_color=RED_A)
+        
+        self.remove(proton, trail)
+        self.add(beam1, beam2, trail1, trail2)
+        
+        # Cleanup SPS visuals to focus
+        self.play(FadeOut(sps_ring), FadeOut(sps_label), FadeOut(proton)) # Proton already removed but just in case
+        
+        info_text = Text("Acceleration Phase", font_size=24, color=YELLOW).next_to(lhc_ring, DOWN)
+        self.play(Write(info_text))
+
+        # ACCELERATION PHASE
+        # We need paths.
+        path_cw = lhc_ring.copy().rotate(PI) # Start at Left
+        path_ccw = lhc_ring.copy().rotate(PI).reverse_direction()
+        
+        # Ramp up speed
+        # We use a ValueTracker to control the "progress" (alpha) along the path manually?
+        # Or just sequence of MoveAlongPath with reducing run_time.
+        # To avoid aliasing, the trail length makes it look like a continuous ring eventually.
+        
+        speeds = [2.0, 1.5, 1.0, 0.7, 0.5, 0.3]
+        for t in speeds:
+            self.play(
+                MoveAlongPath(beam1, path_cw, run_time=t, rate_func=linear),
+                MoveAlongPath(beam2, path_ccw, run_time=t, rate_func=linear),
+            )
+            # Increase trail length as we go faster to simulate motion blur?
+            # TracedPath does this automatically based on speed vs dissipating_time!
+        
+        # Final "light speed" loops
+        # At t=0.2, Manim might skip frames if fps is low. But trail bridges gaps.
+        for _ in range(4):
+             self.play(
+                MoveAlongPath(beam1, path_cw, run_time=0.25, rate_func=linear),
+                MoveAlongPath(beam2, path_ccw, run_time=0.25, rate_func=linear),
+            )
+
+        # ==========================================
+        # PART 3: THE COLLISION (~10s)
+        # ==========================================
+        
+        self.play(FadeOut(info_text), FadeOut(lhc_bold), FadeOut(lhc_sub), FadeOut(lhc_ring))
+        
+        # Setup Collision View
+        detector_ring_1 = Circle(radius=1.5, color=GREY, stroke_width=2) # Tracker
+        detector_ring_2 = Circle(radius=2.5, color=GREY, stroke_width=2) # ECAL
+        detector_ring_3 = Circle(radius=3.5, color=GREY, stroke_width=2) # Muon
+        detector_label = Text("ATLAS Detector View", font_size=24).to_edge(UP)
+        
+        self.play(
+            FadeIn(detector_ring_1), FadeIn(detector_ring_2), FadeIn(detector_ring_3), Write(detector_label),
+            beam1.animate.move_to(LEFT * 4).scale(1.5),
+            beam2.animate.move_to(RIGHT * 4).scale(1.5), # Reset position
+        )
+        
+        # Clear trails for the static moment
+        trail1.clear_updaters()
+        trail2.clear_updaters()
+        self.remove(trail1, trail2)
+        
+        # Add new short trails for the smash
+        t1 = TracedPath(beam1.get_center, dissipating_time=0.2, stroke_width=5, stroke_color=BLUE)
+        t2 = TracedPath(beam2.get_center, dissipating_time=0.2, stroke_width=5, stroke_color=RED)
+        self.add(t1, t2)
+        
+        # Smash
+        self.play(
+            beam1.animate.move_to(ORIGIN),
+            beam2.animate.move_to(ORIGIN),
+            run_time=0.3, rate_func=rush_into
+        )
+        
+        # IMPACT
+        self.remove(beam1, beam2, t1, t2)
+        flash = Flash(ORIGIN, color=WHITE, line_length=1.0, num_lines=30, flash_radius=0.5)
+        
+        # SHOWER
+        shower = VGroup()
+        np.random.seed(42)
+        for _ in range(30):
+            l = Line(ORIGIN, np.array([np.random.uniform(-3,3), np.random.uniform(-3,3), 0]), color=random_color())
+            shower.add(l)
+            
+        self.play(flash, Create(shower, run_time=0.2))
+        self.play(FadeOut(shower, run_time=1))
+        
+        # HIGGS DECAY
+        gamma_l = DashedLine(ORIGIN, LEFT*3 + UP*2, color=YELLOW)
+        gamma_r = DashedLine(ORIGIN, RIGHT*3 + DOWN*2, color=YELLOW)
+        h_label = MathTex(r"H \to \gamma \gamma").shift(UP*0.5)
+        
+        self.play(Create(gamma_l), Create(gamma_r), Write(h_label))
         self.wait(2)
+        
+        # ==========================================
+        # PART 4: THE RESULT (~10s)
+        # ==========================================
+        
+        # Clear
+        self.play(
+            FadeOut(detector_ring_1), FadeOut(detector_ring_2), FadeOut(detector_ring_3),
+            FadeOut(gamma_l), FadeOut(gamma_r), FadeOut(h_label), FadeOut(detector_label)
+        )
+        
+        # Plot
+        ax = Axes(
+            x_range=[100, 160, 10],
+            y_range=[0, 1200, 200],
+            x_length=9, y_length=6
+        )
+        labels = ax.get_axis_labels(x_label="Mass [GeV]", y_label="Events")
+        
+        bg_plot = ax.plot(lambda x: 1000 * np.exp(-0.02*(x-100)), color=GREY)
+        sig_plot = ax.plot(lambda x: 1000 * np.exp(-0.02*(x-100)) + 200*np.exp(-0.1*(x-125)**2), color=YELLOW)
+        
+        self.play(Create(ax), Write(labels))
+        self.play(Create(bg_plot))
+        self.play(Transform(bg_plot, sig_plot))
+        
+        sig_label = MathTex(r"5\sigma \text{ Significance}").to_corner(UR)
+        date = Text("July 2012", font_size=24, color=YELLOW).next_to(sig_label, DOWN)
+        
+        self.play(Write(sig_label), Write(date))
+        self.wait(2)
+        
+        conclusion = Text("The Standard Model is Complete.", font_size=32)
+        self.play(FadeOut(ax), FadeOut(labels), FadeOut(bg_plot), FadeOut(sig_label), FadeOut(date))
+        self.play(Write(conclusion))
+        self.wait(3)
+
