@@ -164,13 +164,7 @@ class HoltWintersExplained(Scene):
         for h in range(1, n_forecast + 1):
             forecast[h-1] = l[-1] + h * b[-1] + s[n_points + (h - 1) % m]
 
-        forecast_line = VMobject(color=RED, stroke_width=3)
-        forecast_points = [axes.c2p(n_points + i, forecast[i]) for i in range(n_forecast)]
-        forecast_line.set_points_smoothly(forecast_points)
-
-        forecast_label = Text("Forecast", font_size=20, color=RED).next_to(forecast_line, RIGHT)
-
-        # Extend axes view
+        # Create NEW expanded axes
         new_axes = Axes(
             x_range=[0, n_points + n_forecast, 12],
             y_range=[60, 160, 20],
@@ -179,12 +173,59 @@ class HoltWintersExplained(Scene):
             axis_config={"include_tip": False},
         ).shift(DOWN * 0.5)
 
-        # Dashed line for forecast region
+        new_x_label = Text("Time (months)", font_size=20).next_to(new_axes, DOWN)
+        new_y_label = Text("Value", font_size=20).rotate(PI / 2).next_to(new_axes, LEFT)
+
+        # Reposition dots on new axes
+        new_dots = VGroup(*[
+            Dot(new_axes.c2p(i, y[i]), radius=0.04, color=WHITE)
+            for i in range(n_points)
+        ])
+
+        # Reposition fitted line on new axes
+        new_fitted_line = VMobject(color=YELLOW, stroke_width=3)
+        new_fitted_line.set_points_smoothly([new_axes.c2p(i, fitted[i]) for i in range(n_points)])
+
+        # Reposition component curves on new axes
+        new_level_line = new_axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=BLUE)
+        new_trend_arrow = Arrow(
+            new_axes.c2p(0, level),
+            new_axes.c2p(n_points, level + trend * n_points),
+            color=GREEN, buff=0
+        )
+        new_seasonal_curve = new_axes.plot(
+            lambda x: level + trend * x + 15 * np.sin(2 * np.pi * x / seasonal_period),
+            x_range=[0, n_points],
+            color=ORANGE
+        )
+
+        # Animate the axes expansion (everything scales smoothly)
+        self.play(
+            Transform(axes, new_axes),
+            Transform(x_label, new_x_label),
+            Transform(y_label, new_y_label),
+            Transform(dots, new_dots),
+            Transform(fitted_line, new_fitted_line),
+            Transform(level_line, new_level_line),
+            Transform(trend_arrow, new_trend_arrow),
+            Transform(seasonal_curve, new_seasonal_curve),
+            run_time=1.5
+        )
+
+        # Dashed line for forecast region boundary
         forecast_region = DashedLine(
-            axes.c2p(n_points, 60),
-            axes.c2p(n_points, 160),
+            new_axes.c2p(n_points, 60),
+            new_axes.c2p(n_points, 160),
             color=GRAY
         )
+
+        # Now create forecast line on the NEW axes
+        forecast_line = VMobject(color=RED, stroke_width=3)
+        forecast_points = [new_axes.c2p(n_points + i, forecast[i]) for i in range(n_forecast)]
+        forecast_line.set_points_smoothly(forecast_points)
+
+        forecast_label = Text("Forecast", font_size=20, color=RED)
+        forecast_label.next_to(new_axes.c2p(n_points + n_forecast, forecast[-1]), RIGHT)
 
         self.play(Create(forecast_region))
         self.play(Create(forecast_line, run_time=2), Write(forecast_label))
