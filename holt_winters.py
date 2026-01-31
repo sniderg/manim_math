@@ -65,58 +65,166 @@ class HoltWintersExplained(Scene):
         )
         self.wait(0.5)
 
-        # === SHOW THE THREE COMPONENTS ===
-        component_title = Text("The Three Components:", font_size=28).to_edge(UP)
+        # === DECOMPOSITION: Peel away each component ===
+        component_title = Text("Decomposing the Signal", font_size=28).to_edge(UP)
         self.play(FadeOut(raw_label), Write(component_title))
-
-        # 1. Level (flat baseline)
-        level_line = DashedLine(
-            axes.c2p(0, level),
-            axes.c2p(n_points, level),
-            color=BLUE, dash_length=0.1
-        )
-        level_label = Text("Level (ℓ) = baseline", font_size=18, color=BLUE)
-        level_label.next_to(axes.c2p(n_points, level), RIGHT)
-        level_eq = MathTex(r"\ell_t = \alpha (y_t - s_{t-m}) + (1-\alpha)(\ell_{t-1} + b_{t-1})",
-                          font_size=24, color=BLUE).to_edge(UP).shift(DOWN * 0.8 + LEFT)
-
-        self.play(Create(level_line), Write(level_label))
-        self.play(Write(level_eq))
         self.wait(0.5)
 
-        # 2. Trend (the slope/drift added to level)
-        trend_line = axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=GREEN)
-        trend_label = Text("Trend (b) = slope", font_size=18, color=GREEN)
-        trend_label.next_to(axes.c2p(n_points, level + trend * n_points), UR, buff=0.1)
-        trend_eq = MathTex(r"b_t = \beta (\ell_t - \ell_{t-1}) + (1-\beta) b_{t-1}",
-                          font_size=24, color=GREEN).next_to(level_eq, DOWN, aligned_edge=LEFT)
+        # Store original y values
+        y_original = y.copy()
 
-        self.play(Create(trend_line), Write(trend_label))
-        self.play(Write(trend_eq))
-        self.wait(0.5)
+        # --- STEP 1: Remove Level (shift down toward 0) ---
+        step1_label = Text("Step 1: Remove Level (baseline)", font_size=22, color=BLUE).to_edge(UP)
+        self.play(Transform(component_title, step1_label))
 
-        # 3. Seasonality
-        # Show just the seasonal component
-        seasonal_curve = axes.plot(
-            lambda x: level + trend * x + 15 * np.sin(2 * np.pi * x / seasonal_period),
-            x_range=[0, n_points],
-            color=ORANGE
-        )
-        seasonal_label = Text("Seasonality (s)", font_size=20, color=ORANGE)
-        seasonal_label.move_to(axes.c2p(n_points / 2, 145))
-        seasonal_eq = MathTex(r"s_t = \gamma (y_t - \ell_t) + (1-\gamma) s_{t-m}",
-                             font_size=24, color=ORANGE).next_to(trend_eq, DOWN, aligned_edge=LEFT)
+        # Create new axes centered around 0
+        detrend_axes = Axes(
+            x_range=[0, n_points, 12],
+            y_range=[-40, 60, 20],
+            x_length=11,
+            y_length=5,
+            axis_config={"include_tip": False},
+        ).shift(DOWN * 0.5)
 
-        self.play(Create(seasonal_curve), Write(seasonal_label))
-        self.play(Write(seasonal_eq))
-        self.wait(1)
+        # Data with level removed
+        y_no_level = y_original - level  # Now centered around 0 + trend + seasonality
 
-        # Clean up equations
+        new_dots_1 = VGroup(*[
+            Dot(detrend_axes.c2p(i, y_no_level[i]), radius=0.04, color=BLUE)
+            for i in range(n_points)
+        ])
+
+        # Show the subtraction
+        level_text = MathTex(r"y_t - \ell", font_size=32, color=BLUE).to_edge(DR)
+
         self.play(
-            FadeOut(level_eq), FadeOut(trend_eq), FadeOut(seasonal_eq),
-            FadeOut(component_title), FadeOut(level_label), FadeOut(trend_label),
-            FadeOut(seasonal_label)
+            Transform(axes, detrend_axes),
+            Transform(dots, new_dots_1),
+            FadeOut(x_label), FadeOut(y_label),
+            Write(level_text),
+            run_time=2
         )
+        self.wait(0.5)
+
+        # --- STEP 2: Remove Trend (flatten the slope) ---
+        step2_label = Text("Step 2: Remove Trend (flatten)", font_size=22, color=GREEN).to_edge(UP)
+        self.play(Transform(component_title, step2_label))
+
+        # Data with level and trend removed
+        y_no_trend = y_original - level - trend * t  # Now just seasonality + noise
+
+        # Axes for deseasonalized (smaller range)
+        seasonal_axes = Axes(
+            x_range=[0, n_points, 12],
+            y_range=[-30, 30, 10],
+            x_length=11,
+            y_length=5,
+            axis_config={"include_tip": False},
+        ).shift(DOWN * 0.5)
+
+        new_dots_2 = VGroup(*[
+            Dot(seasonal_axes.c2p(i, y_no_trend[i]), radius=0.04, color=GREEN)
+            for i in range(n_points)
+        ])
+
+        # Show the subtraction
+        trend_text = MathTex(r"y_t - \ell - b \cdot t", font_size=32, color=GREEN).to_edge(DR)
+
+        self.play(
+            Transform(axes, seasonal_axes),
+            Transform(dots, new_dots_2),
+            Transform(level_text, trend_text),
+            run_time=2
+        )
+        self.wait(0.5)
+
+        # --- STEP 3: Remove Seasonality (reveal residuals) ---
+        step3_label = Text("Step 3: Remove Seasonality (residuals)", font_size=22, color=ORANGE).to_edge(UP)
+        self.play(Transform(component_title, step3_label))
+
+        # Data with everything removed = just noise
+        y_residual = y_original - level - trend * t - seasonality  # Just noise
+
+        # Show the seasonal wave we're subtracting
+        seasonal_wave = seasonal_axes.plot(
+            lambda x: 15 * np.sin(2 * np.pi * x / seasonal_period),
+            x_range=[0, n_points],
+            color=ORANGE, stroke_width=2
+        )
+        self.play(Create(seasonal_wave))
+        self.wait(0.3)
+
+        # Axes for residuals (very small range)
+        residual_axes = Axes(
+            x_range=[0, n_points, 12],
+            y_range=[-15, 15, 5],
+            x_length=11,
+            y_length=5,
+            axis_config={"include_tip": False},
+        ).shift(DOWN * 0.5)
+
+        new_dots_3 = VGroup(*[
+            Dot(residual_axes.c2p(i, y_residual[i]), radius=0.04, color=ORANGE)
+            for i in range(n_points)
+        ])
+
+        residual_text = MathTex(r"y_t - \ell - b \cdot t - s_t = \epsilon_t", font_size=32, color=ORANGE).to_edge(DR)
+
+        self.play(
+            Transform(axes, residual_axes),
+            Transform(dots, new_dots_3),
+            FadeOut(seasonal_wave),
+            Transform(level_text, residual_text),
+            run_time=2
+        )
+        self.wait(0.5)
+
+        # Zero line to show residuals are centered
+        zero_line = DashedLine(
+            residual_axes.c2p(0, 0),
+            residual_axes.c2p(n_points, 0),
+            color=WHITE, dash_length=0.1
+        )
+        zero_label = Text("ε ≈ 0", font_size=20).next_to(zero_line, RIGHT)
+        self.play(Create(zero_line), Write(zero_label))
+        self.wait(0.5)
+
+        # --- STEP 4: Recombine everything ---
+        step4_label = Text("Recombine: Level + Trend + Seasonality", font_size=22, color=YELLOW).to_edge(UP)
+        self.play(Transform(component_title, step4_label))
+
+        # Return to original axes
+        original_axes = Axes(
+            x_range=[0, n_points, 12],
+            y_range=[60, 160, 20],
+            x_length=11,
+            y_length=5,
+            axis_config={"include_tip": False},
+        ).shift(DOWN * 0.5)
+
+        original_dots = VGroup(*[
+            Dot(original_axes.c2p(i, y_original[i]), radius=0.04, color=WHITE)
+            for i in range(n_points)
+        ])
+
+        recombine_text = MathTex(r"y_t = \ell + b \cdot t + s_t + \epsilon_t", font_size=32, color=YELLOW).to_edge(DR)
+
+        self.play(
+            Transform(axes, original_axes),
+            Transform(dots, original_dots),
+            FadeOut(zero_line), FadeOut(zero_label),
+            Transform(level_text, recombine_text),
+            run_time=2
+        )
+
+        # Add back axis labels
+        x_label = Text("Time (months)", font_size=20).next_to(original_axes, DOWN)
+        y_label = Text("Value", font_size=20).rotate(PI / 2).next_to(original_axes, LEFT)
+        self.play(Write(x_label), Write(y_label))
+        self.wait(0.5)
+
+        # Clean up for next section
+        self.play(FadeOut(component_title), FadeOut(level_text))
 
         # === SHOW SMOOTHING PROCESS ===
         smooth_title = Text("Smoothing follows the data", font_size=28).to_edge(UP)
@@ -188,19 +296,6 @@ class HoltWintersExplained(Scene):
         new_fitted_line = VMobject(color=YELLOW, stroke_width=3)
         new_fitted_line.set_points_smoothly([new_axes.c2p(i, fitted[i]) for i in range(n_points)])
 
-        # Reposition component curves on new axes
-        new_level_line = DashedLine(
-            new_axes.c2p(0, level),
-            new_axes.c2p(n_points, level),
-            color=BLUE, dash_length=0.1
-        )
-        new_trend_line = new_axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=GREEN)
-        new_seasonal_curve = new_axes.plot(
-            lambda x: level + trend * x + 15 * np.sin(2 * np.pi * x / seasonal_period),
-            x_range=[0, n_points],
-            color=ORANGE
-        )
-
         # Animate the axes expansion (everything scales smoothly)
         self.play(
             Transform(axes, new_axes),
@@ -208,9 +303,6 @@ class HoltWintersExplained(Scene):
             Transform(y_label, new_y_label),
             Transform(dots, new_dots),
             Transform(fitted_line, new_fitted_line),
-            Transform(level_line, new_level_line),
-            Transform(trend_line, new_trend_line),
-            Transform(seasonal_curve, new_seasonal_curve),
             run_time=1.5
         )
 
