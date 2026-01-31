@@ -155,10 +155,10 @@ class HoltWintersExplained(Scene):
         self.play(Create(seasonal_wave))
         self.wait(0.3)
 
-        # Axes for residuals (very small range)
+        # Axes for residuals (larger range to avoid over-zooming on noise)
         residual_axes = Axes(
             x_range=[0, n_points, 12],
-            y_range=[-15, 15, 5],
+            y_range=[-50, 50, 10],
             x_length=11,
             y_length=5,
             axis_config={"include_tip": False},
