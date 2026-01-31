@@ -69,9 +69,14 @@ class HoltWintersExplained(Scene):
         component_title = Text("The Three Components:", font_size=28).to_edge(UP)
         self.play(FadeOut(raw_label), Write(component_title))
 
-        # 1. Level (baseline)
-        level_line = axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=BLUE)
-        level_label = Text("Level (ℓ)", font_size=20, color=BLUE).next_to(level_line, RIGHT)
+        # 1. Level (flat baseline)
+        level_line = DashedLine(
+            axes.c2p(0, level),
+            axes.c2p(n_points, level),
+            color=BLUE, dash_length=0.1
+        )
+        level_label = Text("Level (ℓ) = baseline", font_size=18, color=BLUE)
+        level_label.next_to(axes.c2p(n_points, level), RIGHT)
         level_eq = MathTex(r"\ell_t = \alpha (y_t - s_{t-m}) + (1-\alpha)(\ell_{t-1} + b_{t-1})",
                           font_size=24, color=BLUE).to_edge(UP).shift(DOWN * 0.8 + LEFT)
 
@@ -79,17 +84,14 @@ class HoltWintersExplained(Scene):
         self.play(Write(level_eq))
         self.wait(0.5)
 
-        # 2. Trend
-        trend_arrow = Arrow(
-            axes.c2p(0, level),
-            axes.c2p(n_points, level + trend * n_points),
-            color=GREEN, buff=0
-        )
-        trend_label = Text("Trend (b)", font_size=20, color=GREEN).next_to(trend_arrow.get_center(), UP)
+        # 2. Trend (the slope/drift added to level)
+        trend_line = axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=GREEN)
+        trend_label = Text("Trend (b) = slope", font_size=18, color=GREEN)
+        trend_label.next_to(axes.c2p(n_points, level + trend * n_points), UR, buff=0.1)
         trend_eq = MathTex(r"b_t = \beta (\ell_t - \ell_{t-1}) + (1-\beta) b_{t-1}",
                           font_size=24, color=GREEN).next_to(level_eq, DOWN, aligned_edge=LEFT)
 
-        self.play(GrowArrow(trend_arrow), Write(trend_label))
+        self.play(Create(trend_line), Write(trend_label))
         self.play(Write(trend_eq))
         self.wait(0.5)
 
@@ -187,12 +189,12 @@ class HoltWintersExplained(Scene):
         new_fitted_line.set_points_smoothly([new_axes.c2p(i, fitted[i]) for i in range(n_points)])
 
         # Reposition component curves on new axes
-        new_level_line = new_axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=BLUE)
-        new_trend_arrow = Arrow(
+        new_level_line = DashedLine(
             new_axes.c2p(0, level),
-            new_axes.c2p(n_points, level + trend * n_points),
-            color=GREEN, buff=0
+            new_axes.c2p(n_points, level),
+            color=BLUE, dash_length=0.1
         )
+        new_trend_line = new_axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=GREEN)
         new_seasonal_curve = new_axes.plot(
             lambda x: level + trend * x + 15 * np.sin(2 * np.pi * x / seasonal_period),
             x_range=[0, n_points],
@@ -207,7 +209,7 @@ class HoltWintersExplained(Scene):
             Transform(dots, new_dots),
             Transform(fitted_line, new_fitted_line),
             Transform(level_line, new_level_line),
-            Transform(trend_arrow, new_trend_arrow),
+            Transform(trend_line, new_trend_line),
             Transform(seasonal_curve, new_seasonal_curve),
             run_time=1.5
         )
