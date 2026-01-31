@@ -1,0 +1,214 @@
+"""
+Holt-Winters Exponential Smoothing - Educational Animation
+
+Run with:
+    uv run manim -pql holt_winters.py HoltWintersExplained
+    uv run manim -pqh holt_winters.py HoltWintersExplained  # high quality
+"""
+
+from manim import *
+import numpy as np
+
+
+class HoltWintersExplained(Scene):
+    """Educational visualization of Holt-Winters triple exponential smoothing."""
+
+    def construct(self):
+        # Title
+        title = Text("Holt-Winters Exponential Smoothing", font_size=40)
+        subtitle = Text("Level + Trend + Seasonality", font_size=24, color=GRAY)
+        subtitle.next_to(title, DOWN)
+
+        self.play(Write(title), FadeIn(subtitle, shift=UP))
+        self.wait(1)
+        self.play(FadeOut(title), FadeOut(subtitle))
+
+        # Generate synthetic seasonal data
+        np.random.seed(42)
+        n_points = 48  # 4 years of monthly data
+        t = np.arange(n_points)
+
+        # Components
+        level = 100
+        trend = 0.5
+        seasonal_period = 12
+        seasonality = 15 * np.sin(2 * np.pi * t / seasonal_period)
+        noise = np.random.normal(0, 3, n_points)
+
+        # Combined signal
+        y = level + trend * t + seasonality + noise
+
+        # Create axes
+        axes = Axes(
+            x_range=[0, n_points, 12],
+            y_range=[60, 160, 20],
+            x_length=11,
+            y_length=5,
+            axis_config={"include_tip": False},
+        ).shift(DOWN * 0.5)
+
+        x_label = Text("Time (months)", font_size=20).next_to(axes, DOWN)
+        y_label = Text("Value", font_size=20).rotate(PI / 2).next_to(axes, LEFT)
+
+        self.play(Create(axes), Write(x_label), Write(y_label))
+
+        # Plot the raw data as dots
+        dots = VGroup(*[
+            Dot(axes.c2p(i, y[i]), radius=0.04, color=WHITE)
+            for i in range(n_points)
+        ])
+
+        raw_label = Text("Raw Data", font_size=20, color=WHITE).to_edge(UP).shift(LEFT * 4)
+        self.play(
+            LaggedStart(*[FadeIn(d, scale=0.5) for d in dots], lag_ratio=0.02),
+            Write(raw_label)
+        )
+        self.wait(0.5)
+
+        # === SHOW THE THREE COMPONENTS ===
+        component_title = Text("The Three Components:", font_size=28).to_edge(UP)
+        self.play(FadeOut(raw_label), Write(component_title))
+
+        # 1. Level (baseline)
+        level_line = axes.plot(lambda x: level + trend * x, x_range=[0, n_points], color=BLUE)
+        level_label = Text("Level (ℓ)", font_size=20, color=BLUE).next_to(level_line, RIGHT)
+        level_eq = MathTex(r"\ell_t = \alpha (y_t - s_{t-m}) + (1-\alpha)(\ell_{t-1} + b_{t-1})",
+                          font_size=24, color=BLUE).to_edge(UP).shift(DOWN * 0.8 + LEFT)
+
+        self.play(Create(level_line), Write(level_label))
+        self.play(Write(level_eq))
+        self.wait(0.5)
+
+        # 2. Trend
+        trend_arrow = Arrow(
+            axes.c2p(0, level),
+            axes.c2p(n_points, level + trend * n_points),
+            color=GREEN, buff=0
+        )
+        trend_label = Text("Trend (b)", font_size=20, color=GREEN).next_to(trend_arrow.get_center(), UP)
+        trend_eq = MathTex(r"b_t = \beta (\ell_t - \ell_{t-1}) + (1-\beta) b_{t-1}",
+                          font_size=24, color=GREEN).next_to(level_eq, DOWN, aligned_edge=LEFT)
+
+        self.play(GrowArrow(trend_arrow), Write(trend_label))
+        self.play(Write(trend_eq))
+        self.wait(0.5)
+
+        # 3. Seasonality
+        # Show just the seasonal component
+        seasonal_curve = axes.plot(
+            lambda x: level + trend * x + 15 * np.sin(2 * np.pi * x / seasonal_period),
+            x_range=[0, n_points],
+            color=ORANGE
+        )
+        seasonal_label = Text("Seasonality (s)", font_size=20, color=ORANGE)
+        seasonal_label.move_to(axes.c2p(n_points / 2, 145))
+        seasonal_eq = MathTex(r"s_t = \gamma (y_t - \ell_t) + (1-\gamma) s_{t-m}",
+                             font_size=24, color=ORANGE).next_to(trend_eq, DOWN, aligned_edge=LEFT)
+
+        self.play(Create(seasonal_curve), Write(seasonal_label))
+        self.play(Write(seasonal_eq))
+        self.wait(1)
+
+        # Clean up equations
+        self.play(
+            FadeOut(level_eq), FadeOut(trend_eq), FadeOut(seasonal_eq),
+            FadeOut(component_title), FadeOut(level_label), FadeOut(trend_label),
+            FadeOut(seasonal_label)
+        )
+
+        # === SHOW SMOOTHING PROCESS ===
+        smooth_title = Text("Smoothing follows the data", font_size=28).to_edge(UP)
+        self.play(Write(smooth_title))
+
+        # Compute Holt-Winters manually (additive)
+        alpha, beta, gamma = 0.3, 0.1, 0.3
+        m = 12  # seasonal period
+
+        # Initialize
+        l = np.zeros(n_points)
+        b = np.zeros(n_points)
+        s = np.zeros(n_points + m)
+
+        # Initial values
+        l[0] = np.mean(y[:m])
+        b[0] = (np.mean(y[m:2*m]) - np.mean(y[:m])) / m
+        for i in range(m):
+            s[i] = y[i] - l[0]
+
+        # Holt-Winters iteration
+        fitted = np.zeros(n_points)
+        fitted[0] = l[0] + b[0] + s[0]
+
+        for t in range(1, n_points):
+            l[t] = alpha * (y[t] - s[t]) + (1 - alpha) * (l[t-1] + b[t-1])
+            b[t] = beta * (l[t] - l[t-1]) + (1 - beta) * b[t-1]
+            s[t + m] = gamma * (y[t] - l[t]) + (1 - gamma) * s[t]
+            fitted[t] = l[t] + b[t] + s[t + m]
+
+        # Animate the fitted line being drawn
+        fitted_line = VMobject(color=YELLOW, stroke_width=3)
+        fitted_line.set_points_smoothly([axes.c2p(i, fitted[i]) for i in range(n_points)])
+
+        hw_label = Text("Holt-Winters Fit", font_size=20, color=YELLOW).to_edge(UR).shift(DOWN)
+
+        self.play(Create(fitted_line, run_time=3), Write(hw_label))
+        self.wait(0.5)
+
+        # === FORECAST ===
+        forecast_title = Text("Forecasting into the future", font_size=28).to_edge(UP)
+        self.play(Transform(smooth_title, forecast_title))
+
+        # Generate forecast
+        n_forecast = 12
+        forecast = np.zeros(n_forecast)
+        for h in range(1, n_forecast + 1):
+            forecast[h-1] = l[-1] + h * b[-1] + s[n_points + (h - 1) % m]
+
+        forecast_line = VMobject(color=RED, stroke_width=3)
+        forecast_points = [axes.c2p(n_points + i, forecast[i]) for i in range(n_forecast)]
+        forecast_line.set_points_smoothly(forecast_points)
+
+        forecast_label = Text("Forecast", font_size=20, color=RED).next_to(forecast_line, RIGHT)
+
+        # Extend axes view
+        new_axes = Axes(
+            x_range=[0, n_points + n_forecast, 12],
+            y_range=[60, 160, 20],
+            x_length=11,
+            y_length=5,
+            axis_config={"include_tip": False},
+        ).shift(DOWN * 0.5)
+
+        # Dashed line for forecast region
+        forecast_region = DashedLine(
+            axes.c2p(n_points, 60),
+            axes.c2p(n_points, 160),
+            color=GRAY
+        )
+
+        self.play(Create(forecast_region))
+        self.play(Create(forecast_line, run_time=2), Write(forecast_label))
+        self.wait(1)
+
+        # Final summary
+        self.play(FadeOut(smooth_title))
+        summary = VGroup(
+            MathTex(r"\alpha", r" = \text{level smoothing}", font_size=28),
+            MathTex(r"\beta", r" = \text{trend smoothing}", font_size=28),
+            MathTex(r"\gamma", r" = \text{seasonal smoothing}", font_size=28),
+        ).arrange(DOWN, aligned_edge=LEFT).to_edge(UP)
+        summary[0][0].set_color(BLUE)
+        summary[1][0].set_color(GREEN)
+        summary[2][0].set_color(ORANGE)
+
+        self.play(Write(summary))
+        self.wait(2)
+
+        # Fade out
+        self.play(*[FadeOut(mob) for mob in self.mobjects])
+
+        # Final message
+        final = Text("Holt-Winters: Smoothing for\nLevel + Trend + Seasonality",
+                    font_size=32, line_spacing=1.5)
+        self.play(Write(final))
+        self.wait(2)
