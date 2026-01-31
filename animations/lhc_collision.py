@@ -238,8 +238,12 @@ class LHCCollision(Scene):
         self.play(Write(sig_label), Write(date))
         self.wait(2)
         
-        conclusion = Text("The Standard Model is Complete.", font_size=32)
-        self.play(FadeOut(ax), FadeOut(labels), FadeOut(bg_plot), FadeOut(sig_label), FadeOut(date))
+        conclusion = Text("Standard Model: Complete?", font_size=32).to_edge(UP)
+        missing = Text("But what about Gravity & Dark Matter?", font_size=24, color=RED).next_to(conclusion, DOWN)
+        
+        self.play(FadeOut(ax), FadeOut(labels), FadeOut(bg_plot), FadeOut(sig_plot), FadeOut(sig_label), FadeOut(date))
         self.play(Write(conclusion))
+        self.wait(1)
+        self.play(Write(missing))
         self.wait(3)
 
