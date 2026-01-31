@@ -8,12 +8,20 @@ Run with:
 
 from manim import *
 import numpy as np
+import os
 
 
 class HoltWintersExplained(Scene):
     """Educational visualization of Holt-Winters triple exponential smoothing."""
 
     def construct(self):
+        # 0. Add ambient audio (if available)
+        audio_path = "assets/ambient.mp3"
+        if os.path.exists(audio_path):
+            self.add_sound(audio_path)
+        else:
+            print(f"Warning: Audio file '{audio_path}' not found. No audio will play.")
+
         # Title
         title = Text("Holt-Winters Exponential Smoothing", font_size=40)
         subtitle = Text("Level + Trend + Seasonality", font_size=24, color=GRAY)
