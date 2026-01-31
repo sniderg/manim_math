@@ -343,7 +343,6 @@ class HoltWintersExplained(Scene):
         self.play(*[FadeOut(mob) for mob in self.mobjects])
 
         # Final message
-        final = Text("Holt-Winters: Smoothing for\nLevel + Trend + Seasonality",
-                    font_size=32, line_spacing=1.5)
+        final = Text("Any Questions?", font_size=48)
         self.play(Write(final))
         self.wait(2)
