@@ -211,24 +211,39 @@ class LHCCollision(Scene):
         self.play(FadeOut(shower, run_time=1))
         
         # HIGGS DECAY
-        gamma_l = DashedLine(ORIGIN, LEFT*3 + UP*2, color=YELLOW)
-        gamma_r = DashedLine(ORIGIN, RIGHT*3 + DOWN*2, color=YELLOW)
+        # HIGGS DECAY
+        def get_photon(p1, p2):
+            line = Line(p1, p2)
+            l = line.get_length()
+            angle = line.get_angle()
+            # Sine wave centered at ORIGIN
+            # 5 cycles
+            wave = FunctionGraph(lambda x: 0.1 * np.sin(TAU * 5 * x / l), x_range=[-l/2, l/2], color=YELLOW)
+            wave.rotate(angle)
+            wave.move_to(line.get_center())
+            return wave
+
+        gamma_l = get_photon(ORIGIN, LEFT*3 + UP*2)
+        gamma_r = get_photon(ORIGIN, RIGHT*3 + DOWN*2)
+        
+        # Add labels to the photons
+        gamma_lbl_l = MathTex(r"\gamma", color=YELLOW, font_size=24).next_to(gamma_l, UP, buff=0.1)
+        gamma_lbl_r = MathTex(r"\gamma", color=YELLOW, font_size=24).next_to(gamma_r, DOWN, buff=0.1)
+
         h_label = MathTex(r"H \to \gamma \gamma").shift(UP*0.5)
         
-        self.play(Create(gamma_l), Create(gamma_r), Write(h_label))
+        self.play(
+            Create(gamma_l), Create(gamma_r), 
+            Write(gamma_lbl_l), Write(gamma_lbl_r),
+            Write(h_label)
+        )
         self.wait(2)
         
         # ==========================================
         # PART 4: THE RESULT (~10s)
         # ==========================================
         
-        # Clear
-        self.play(
-            FadeOut(detector_ring_1), FadeOut(detector_ring_2), FadeOut(detector_ring_3),
-            FadeOut(gamma_l), FadeOut(gamma_r), FadeOut(h_label), FadeOut(detector_label)
-        )
-        
-        # Plot
+        # Prepare Plot (but don't show yet)
         ax = Axes(
             x_range=[100, 160, 10],
             y_range=[0, 1200, 200],
@@ -236,12 +251,21 @@ class LHCCollision(Scene):
         )
         labels = ax.get_axis_labels(x_label="Mass [GeV]", y_label="Events")
         
+        # Background only (no bump)
         bg_plot = ax.plot(lambda x: 1000 * np.exp(-0.02*(x-100)), color=GREY)
+        # Signal (bump)
         sig_plot = ax.plot(lambda x: 1000 * np.exp(-0.02*(x-100)) + 200*np.exp(-0.1*(x-125)**2), color=YELLOW)
         
-        self.play(Create(ax), Write(labels))
-        self.play(Create(bg_plot))
-        self.play(Transform(bg_plot, sig_plot))
+        # Clear old stuff AND Transform photons -> Signal
+        self.play(
+            FadeOut(detector_ring_1), FadeOut(detector_ring_2), FadeOut(detector_ring_3), FadeOut(detector_label),
+            FadeOut(h_label), FadeOut(gamma_lbl_l), FadeOut(gamma_lbl_r),
+            Create(ax), Write(labels), Create(bg_plot),
+            ReplacementTransform(VGroup(gamma_l, gamma_r), sig_plot)
+        )
+        
+        # self.play(Create(bg_plot)) # Already created above
+        # self.play(Transform(bg_plot, sig_plot)) # Replaced by direct transform
         
         sig_label = MathTex(r"5\sigma \text{ Significance}").to_corner(UR)
         date = Text("July 2012", font_size=24, color=YELLOW).next_to(sig_label, DOWN)
