@@ -33,33 +33,37 @@ class LHCCollision(Scene):
         
         # Particle 1: Photon (Massless) - Zips through
         photon = Dot(color=YELLOW, radius=0.1)
-        photon.move_to(LEFT * 8 + UP * 2)
+        photon.move_to(LEFT * 6 + UP * 2)
         photon_trail = TracedPath(photon.get_center, dissipating_time=0.5, stroke_opacity=[1, 0], stroke_width=3, stroke_color=YELLOW)
         self.add(photon_trail)
         
         photon_label = Text("Photon (Massless)", font_size=20, color=YELLOW).next_to(photon, UP)
+        photon_label.add_updater(lambda m: m.next_to(photon, UP))
         
         self.play(
-            MoveAlongPath(photon, Line(LEFT*8+UP*2, RIGHT*8+UP*2), run_time=1.5, rate_func=linear),
-            Write(photon_label, run_time=1)
+            MoveAlongPath(photon, Line(LEFT*6+UP*2, RIGHT*6+UP*2), run_time=2.0, rate_func=linear),
+            FadeIn(photon_label, run_time=0.5)
         )
-        self.remove(photon, photon_trail, photon_label)
+        photon_label.clear_updaters()
+        self.play(FadeOut(photon), FadeOut(photon_trail), FadeOut(photon_label))
         
         # Particle 2: Heavy Quark (Massive) - Drags through
         # We simulate interaction by making nearby grid points light up/move towards it
         quark = Dot(color=RED, radius=0.15)
-        quark.move_to(LEFT * 6 + DOWN * 1)
+        quark.move_to(LEFT * 4 + DOWN * 1)
         # Shift label UP or shorten it to avoid cut-off at bottom of screen
         quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).next_to(quark, UP)
+        quark_label.add_updater(lambda m: m.next_to(quark, UP))
         
         tracer = TracedPath(quark.get_center, dissipating_time=2.0, stroke_opacity=[1, 0], stroke_width=5, stroke_color=RED) 
         self.add(tracer)
 
         # Move slower
         self.play(
-            MoveAlongPath(quark, Line(LEFT*6+DOWN*1, RIGHT*6+DOWN*1), run_time=5, rate_func=linear),
+            MoveAlongPath(quark, Line(LEFT*4+DOWN*1, RIGHT*6+DOWN*1), run_time=5, rate_func=linear),
             FadeIn(quark_label),
         )
+        quark_label.clear_updaters()
         
         # Formula & Date
         lagrangian = MathTex(r"\mathcal{L} \supset -g H \bar{\psi} \psi", font_size=36, color=BLUE).to_edge(DOWN).shift(UP*0.5)
