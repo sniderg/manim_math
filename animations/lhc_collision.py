@@ -48,7 +48,7 @@ class LHCCollision(Scene):
         # Particle 2: Heavy Quark (Massive) - Drags through
         # We simulate interaction by making nearby grid points light up/move towards it
         quark = Dot(color=RED, radius=0.15)
-        quark.move_to(LEFT * 8 + DOWN * 1)
+        quark.move_to(LEFT * 6 + DOWN * 1)
         # Shift label UP or shorten it to avoid cut-off at bottom of screen
         quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).next_to(quark, UP)
         
@@ -57,7 +57,7 @@ class LHCCollision(Scene):
 
         # Move slower
         self.play(
-            MoveAlongPath(quark, Line(LEFT*8+DOWN*1, RIGHT*8+DOWN*1), run_time=5, rate_func=linear),
+            MoveAlongPath(quark, Line(LEFT*6+DOWN*1, RIGHT*6+DOWN*1), run_time=5, rate_func=linear),
             FadeIn(quark_label),
         )
         
