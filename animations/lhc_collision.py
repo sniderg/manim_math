@@ -37,14 +37,12 @@ class LHCCollision(Scene):
         photon_trail = TracedPath(photon.get_center, dissipating_time=0.5, stroke_opacity=[1, 0], stroke_width=3, stroke_color=YELLOW)
         self.add(photon_trail)
         
-        photon_label = Text("Photon (Massless)", font_size=20, color=YELLOW).next_to(photon, UP)
-        photon_label.add_updater(lambda m: m.next_to(photon, UP))
+        photon_label = Text("Photon (Massless)", font_size=20, color=YELLOW).to_corner(UR)
         
+        self.play(FadeIn(photon_label, run_time=0.3))
         self.play(
             MoveAlongPath(photon, Line(LEFT*6+UP*2, RIGHT*6+UP*2), run_time=2.0, rate_func=linear),
-            FadeIn(photon_label, run_time=0.5)
         )
-        photon_label.clear_updaters()
         self.play(FadeOut(photon), FadeOut(photon_trail), FadeOut(photon_label))
         
         # Particle 2: Heavy Quark (Massive) - Drags through
@@ -52,18 +50,16 @@ class LHCCollision(Scene):
         quark = Dot(color=RED, radius=0.15)
         quark.move_to(LEFT * 4 + DOWN * 1)
         # Shift label UP or shorten it to avoid cut-off at bottom of screen
-        quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).next_to(quark, UP)
-        quark_label.add_updater(lambda m: m.next_to(quark, UP))
+        quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).to_corner(UR)
         
         tracer = TracedPath(quark.get_center, dissipating_time=2.0, stroke_opacity=[1, 0], stroke_width=5, stroke_color=RED) 
         self.add(tracer)
 
         # Move slower
+        self.play(FadeIn(quark_label, run_time=0.3))
         self.play(
             MoveAlongPath(quark, Line(LEFT*4+DOWN*1, RIGHT*6+DOWN*1), run_time=5, rate_func=linear),
-            FadeIn(quark_label),
         )
-        quark_label.clear_updaters()
         
         # Formula & Date
         lagrangian = MathTex(r"\mathcal{L} \supset -g H \bar{\psi} \psi", font_size=36, color=BLUE).to_edge(DOWN).shift(UP*0.5)
@@ -96,10 +92,11 @@ class LHCCollision(Scene):
         sps_label = Text("SPS (7 km)", font_size=16, color=GRAY).next_to(sps_ring, UP)
         lhc_bold = Text("Large Hadron Collider", font_size=28, color=BLUE_B).to_corner(UL)
         lhc_sub = Text("27 km Circumference", font_size=20, color=BLUE_D).next_to(lhc_bold, DOWN)
+        lhc_dates = Text("Operations: 2008 – Present", font_size=18, color=GRAY).next_to(lhc_sub, DOWN, aligned_edge=LEFT)
         
         self.play(
             Create(sps_ring), Write(sps_label),
-            Create(lhc_ring), Write(lhc_bold), Write(lhc_sub)
+            Create(lhc_ring), Write(lhc_bold), Write(lhc_sub), Write(lhc_dates)
         )
         
         # PROTON BUNCH INJECTION
@@ -162,7 +159,7 @@ class LHCCollision(Scene):
         # PART 3: THE COLLISION (~10s)
         # ==========================================
         
-        self.play(FadeOut(info_text), FadeOut(lhc_bold), FadeOut(lhc_sub), FadeOut(lhc_ring))
+        self.play(FadeOut(info_text), FadeOut(lhc_bold), FadeOut(lhc_sub), FadeOut(lhc_dates), FadeOut(lhc_ring))
         
         # Setup Collision View
         detector_ring_1 = Circle(radius=1.5, color=GREY, stroke_width=2) # Tracker
