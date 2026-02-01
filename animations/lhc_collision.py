@@ -126,7 +126,7 @@ class LHCCollision(Scene):
         # Cleanup SPS visuals to focus
         self.play(FadeOut(sps_ring), FadeOut(sps_label), FadeOut(proton)) # Proton already removed but just in case
         
-        info_text = Text("Acceleration Phase", font_size=24, color=YELLOW).next_to(lhc_ring, DOWN)
+        info_text = Text("Acceleration Phase", font_size=24, color=YELLOW).next_to(lhc_label, DOWN, buff=0.3)
         self.play(Write(info_text))
 
         # ACCELERATION PHASE
