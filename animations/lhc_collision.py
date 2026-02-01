@@ -91,13 +91,13 @@ class LHCCollision(Scene):
         
         # Detailed Labels
         sps_label = Text("SPS (7 km)", font_size=16, color=GRAY).next_to(sps_ring, UP)
+        lhc_label = Text("LHC (27 km)", font_size=16, color=BLUE_D).next_to(lhc_ring, DOWN)
         lhc_bold = Text("Large Hadron Collider", font_size=28, color=BLUE_B).to_corner(UL)
-        lhc_sub = Text("27 km Circumference", font_size=20, color=BLUE_D).next_to(lhc_bold, DOWN)
-        lhc_dates = Text("Operations: 2008 – Present", font_size=18, color=GRAY).next_to(lhc_sub, DOWN, aligned_edge=LEFT)
+        lhc_dates = Text("Operations: 2008 – Present", font_size=18, color=GRAY).next_to(lhc_bold, DOWN, aligned_edge=LEFT)
         
         self.play(
             Create(sps_ring), Write(sps_label),
-            Create(lhc_ring), Write(lhc_bold), Write(lhc_sub), Write(lhc_dates)
+            Create(lhc_ring), Write(lhc_label), Write(lhc_bold), Write(lhc_dates)
         )
         
         # PROTON BUNCH INJECTION
@@ -160,7 +160,7 @@ class LHCCollision(Scene):
         # PART 3: THE COLLISION (~10s)
         # ==========================================
         
-        self.play(FadeOut(info_text), FadeOut(lhc_bold), FadeOut(lhc_sub), FadeOut(lhc_dates), FadeOut(lhc_ring))
+        self.play(FadeOut(info_text), FadeOut(lhc_bold), FadeOut(lhc_label), FadeOut(lhc_dates), FadeOut(lhc_ring))
         
         # Setup Collision View
         detector_ring_1 = Circle(radius=1.5, color=GREY, stroke_width=2) # Tracker
