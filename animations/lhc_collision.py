@@ -103,13 +103,17 @@ class LHCCollision(Scene):
         # PROTON BUNCH INJECTION
         # Start slow to avoid aliasing visuals
         proton = Dot(point=sps_ring.point_at_angle(0), color=YELLOW, radius=0.08)
+        proton_lbl = Text("Proton Bunch", font_size=16, color=YELLOW).next_to(sps_ring, DOWN)
         
         # Proper trail for smooth motion look
         trail = TracedPath(proton.get_center, dissipating_time=0.4, stroke_opacity=[1, 0], stroke_width=4, stroke_color=YELLOW)
         self.add(trail)
         
         # SPS Phase
-        self.play(MoveAlongPath(proton, sps_ring, run_time=2, rate_func=linear))
+        self.play(
+            MoveAlongPath(proton, sps_ring, run_time=2, rate_func=linear),
+            Write(proton_lbl)
+        )
         self.play(MoveAlongPath(proton, sps_ring, run_time=1, rate_func=linear))
         
         # Transfer to LHC
@@ -124,10 +128,11 @@ class LHCCollision(Scene):
         self.add(beam1, beam2, trail1, trail2)
         
         # Cleanup SPS visuals to focus
-        self.play(FadeOut(sps_ring), FadeOut(sps_label), FadeOut(proton)) # Proton already removed but just in case
+        self.play(FadeOut(sps_ring), FadeOut(sps_label), FadeOut(proton), FadeOut(proton_lbl)) # Proton already removed but just in case
         
         info_text = Text("Acceleration Phase", font_size=24, color=YELLOW).next_to(lhc_label, DOWN, buff=0.3)
-        self.play(Write(info_text))
+        beams_text = Text("Counter-Rotating Beams", font_size=20, color=WHITE).next_to(info_text, DOWN)
+        self.play(Write(info_text), Write(beams_text))
 
         # ACCELERATION PHASE
         # We need paths.
@@ -160,7 +165,7 @@ class LHCCollision(Scene):
         # PART 3: THE COLLISION (~10s)
         # ==========================================
         
-        self.play(FadeOut(info_text), FadeOut(lhc_bold), FadeOut(lhc_label), FadeOut(lhc_dates), FadeOut(lhc_ring))
+        self.play(FadeOut(info_text), FadeOut(beams_text), FadeOut(lhc_bold), FadeOut(lhc_label), FadeOut(lhc_dates), FadeOut(lhc_ring))
         
         # Setup Collision View
         detector_ring_1 = Circle(radius=1.5, color=GREY, stroke_width=2) # Tracker
