@@ -38,7 +38,7 @@ class LHCCollision(Scene):
         self.add(photon_trail)
         
         # Centered label just below the photon path (which is at UP*2)
-        photon_label = Text("Photon (Massless)", font_size=24, color=YELLOW).move_to(UP * 0.5)
+        photon_label = Text("Photon (Massless)", font_size=24, color=YELLOW).move_to(UP * 0.8)
         
         self.play(FadeIn(photon_label, run_time=0.3))
         self.play(
@@ -51,7 +51,7 @@ class LHCCollision(Scene):
         quark = Dot(color=RED, radius=0.15)
         quark.move_to(LEFT * 4 + DOWN * 1)
         # Centered label just below the quark path (which is at DOWN*1)
-        quark_label = Text("Top Quark (Massive)", font_size=24, color=RED).move_to(DOWN * 2.5)
+        quark_label = Text("Top Quark (Massive)", font_size=24, color=RED).move_to(DOWN * 2.2)
         
         tracer = TracedPath(quark.get_center, dissipating_time=2.0, stroke_opacity=[1, 0], stroke_width=5, stroke_color=RED) 
         self.add(tracer)
