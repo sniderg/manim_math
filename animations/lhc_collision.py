@@ -49,7 +49,9 @@ class LHCCollision(Scene):
         # We simulate interaction by making nearby grid points light up/move towards it
         quark = Dot(color=RED, radius=0.15)
         quark.move_to(LEFT * 8 + DOWN * 1)
-        quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).next_to(quark, DOWN)
+        # Shift label UP or shorten it to avoid cut-off at bottom of screen
+        quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).next_to(quark, UP)
+        
         tracer = TracedPath(quark.get_center, dissipating_time=2.0, stroke_opacity=[1, 0], stroke_width=5, stroke_color=RED) 
         self.add(tracer)
 
@@ -59,15 +61,17 @@ class LHCCollision(Scene):
             FadeIn(quark_label),
         )
         
-        # Formula
-        lagrangian = MathTex(r"\mathcal{L} \supset -g H \bar{\psi} \psi", font_size=36, color=BLUE).to_edge(DOWN)
-        self.play(Write(lagrangian))
+        # Formula & Date
+        lagrangian = MathTex(r"\mathcal{L} \supset -g H \bar{\psi} \psi", font_size=36, color=BLUE).to_edge(DOWN).shift(UP*0.5)
+        proposal_date = Text("Proposed: 1964 (Higgs, Englert, Brout)", font_size=24, color=GRAY).next_to(lagrangian, DOWN)
+        
+        self.play(Write(lagrangian), Write(proposal_date))
         self.wait(2)
         
         # Transition
         self.play(
             FadeOut(grid), FadeOut(field_title), FadeOut(field_desc), 
-            FadeOut(quark), FadeOut(quark_label), FadeOut(lagrangian), FadeOut(tracer)
+            FadeOut(quark), FadeOut(quark_label), FadeOut(lagrangian), FadeOut(proposal_date), FadeOut(tracer)
         )
 
         # ==========================================
