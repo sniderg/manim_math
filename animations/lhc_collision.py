@@ -37,7 +37,8 @@ class LHCCollision(Scene):
         photon_trail = TracedPath(photon.get_center, dissipating_time=0.5, stroke_opacity=[1, 0], stroke_width=3, stroke_color=YELLOW)
         self.add(photon_trail)
         
-        photon_label = Text("Photon (Massless)", font_size=20, color=YELLOW).to_corner(UR)
+        # Centered label just below the photon path (which is at UP*2)
+        photon_label = Text("Photon (Massless)", font_size=24, color=YELLOW).move_to(UP * 0.5)
         
         self.play(FadeIn(photon_label, run_time=0.3))
         self.play(
@@ -49,8 +50,8 @@ class LHCCollision(Scene):
         # We simulate interaction by making nearby grid points light up/move towards it
         quark = Dot(color=RED, radius=0.15)
         quark.move_to(LEFT * 4 + DOWN * 1)
-        # Shift label UP or shorten it to avoid cut-off at bottom of screen
-        quark_label = Text("Top Quark (Massive)", font_size=20, color=RED).to_corner(UR)
+        # Centered label just below the quark path (which is at DOWN*1)
+        quark_label = Text("Top Quark (Massive)", font_size=24, color=RED).move_to(DOWN * 2.5)
         
         tracer = TracedPath(quark.get_center, dissipating_time=2.0, stroke_opacity=[1, 0], stroke_width=5, stroke_color=RED) 
         self.add(tracer)
