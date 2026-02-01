@@ -256,5 +256,15 @@ class LHCCollision(Scene):
         self.play(Write(conclusion))
         self.wait(1)
         self.play(Write(missing))
+        
+        # Cosmology Images
+        bh_image = ImageMobject("assets/images/black_hole.png").scale(0.8)
+        galaxy_image = ImageMobject("assets/images/galaxy.png").scale(0.8)
+        
+        # Arrange side by side
+        img_group = Group(bh_image, galaxy_image).arrange(RIGHT, buff=1.0)
+        img_group.next_to(missing, DOWN, buff=0.5)
+        
+        self.play(FadeIn(img_group))
         self.wait(3)
 
