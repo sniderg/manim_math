@@ -16,8 +16,11 @@ class WarehouseOptimizationV3(MovingCameraScene):
         
         # 2. Setup Camera (Southern Ontario focus)
         # Bounding box roughly covers Windsor (-83) to Ottawa (-75)
-        self.camera.frame.move_to([-79.5, 43.8, 0])
-        self.camera.frame.set(width=9.5) 
+        # Calculate center point in Manim coordinates
+        center_point = self.map_builder.lat_lon_to_point(43.8, -79.5)
+        self.camera.frame.move_to(center_point)
+        # Initial width to see the whole region
+        self.camera.frame.set(width=8.0) 
         
         # 3. Visualization Setup
         zones = VGroup()
@@ -182,8 +185,9 @@ class WarehouseOptimizationV3(MovingCameraScene):
         self.wait(2)
         
         # 9. Final Zoom Out
+        zoom_out_center = self.map_builder.lat_lon_to_point(44, -79)
         self.play(
-            self.camera.frame.animate.set(width=12).move_to([-79, 44, 0]),
+            self.camera.frame.animate.set(width=12).move_to(zoom_out_center),
             run_time=3
         )
         self.wait(1)
